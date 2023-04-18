@@ -64,6 +64,7 @@ class _LoginWithPhoneState extends State<LoginWithPhone> {
                             "__________________________________xxxxxxxxxxxxxx");
                         print(verificationId);
                         Get.to(VerifyCode(verificationId: verificationId));
+                        // Navigator.push(context, Route)
                         //Get.to(VerifyCodePage(verificationId: verificationId));
                       }),
                       codeAutoRetrievalTimeout: (e) {
