@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gallery_saver/files.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 import 'package:get/get.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uploaderapp/newhome/nav_drawer.dart';
 
 class MemeCreatorPage extends StatefulWidget {
@@ -129,14 +134,32 @@ class _MemeCreatorPageState extends State<MemeCreatorPage> {
   }
 
   void saveImageToGallery(String ImageUrl) async {
-    var response = await Dio()
-        .get(ImageUrl, options: Options(responseType: ResponseType.bytes));
-    final result = await ImageGallerySaver.saveImage(
-        Uint8List.fromList(response.data),
-        quality: 60,
-        name: "hello");
-    print(result);
-    Navigator.pop(context);
-    setState(() {});
+    //String finalmemeUrl = ImageUrl;
+    final response = await http.get(Uri.parse(ImageUrl));
+
+    // var response = await Dio()
+    //     .get(ImageUrl, options: Options(responseType: ResponseType.bytes));
+    print(response.bodyBytes);
+    Uint8List image = response.bodyBytes;
+    // final result = await ImageGallerySaver.saveImage(
+    //     Uint8List.fromList(response.data),
+    //     quality: 60,
+    //     name: "hello");
+    // print("/////////////////////////////");
+    // print(result);
+    // Navigator.pop(context);
+    //setState(() {});
+    var appDocumentsDir = await getApplicationDocumentsDirectory();
+    //final Directory? downloadsDir = await getDownloadsDirectory();
+    var firstPath = '${appDocumentsDir.path}/images';
+    var filePathAndName = "${appDocumentsDir.path}/images/meme.jpeg";
+
+    await Directory(firstPath).create(recursive: true);
+    File file = File(filePathAndName);
+    file.writeAsBytesSync(image);
+
+    await GallerySaver.saveImage(file.path);
+
+    SnackBar(content: Text("saved to Gallry"));
   }
 }
