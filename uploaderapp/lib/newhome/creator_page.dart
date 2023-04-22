@@ -1,16 +1,17 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
-
-import 'package:dio/dio.dart';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:gallery_saver/files.dart';
 import 'package:gallery_saver/gallery_saver.dart';
-import 'package:get/get.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uploaderapp/newhome/nav_drawer.dart';
+import 'package:uploaderapp/newhome/result.dart';
+import 'package:flutter/widgets.dart';
 
+//import 'package:flutter_image_meme/flutter_image_meme.dart';
+// import 'package:flutter_screenshot/flutter_screenshot.dart';
 class MemeCreatorPage extends StatefulWidget {
   String selectedImageUrl;
   MemeCreatorPage({super.key, required this.selectedImageUrl});
@@ -23,9 +24,49 @@ class _MemeCreatorPageState extends State<MemeCreatorPage> {
   TextEditingController topController = TextEditingController();
   TextEditingController bottomController = TextEditingController();
 
+  Widget buidMyStack(String ImageUrl) {
+    return Stack(
+      children: [
+        Image.network(
+          ImageUrl,
+          fit: BoxFit.scaleDown,
+        ),
+        Positioned(
+          top: 10.0,
+          //left: ,
+          // left: 20.0,
+          child: Text(
+            "toptext",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 240,
+          //left: 100,
+          bottom: 10,
+          // bottom: 300.0,
+          // right: 20.0,
+          child: Text(
+            "bottomtext",
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   //String selectedImageUrl;
   @override
   Widget build(BuildContext context) {
+    ///buidMyStack _buildstack =buidMyStack;
     return Scaffold(
         drawer: NavDrawer(selected: DrawerSelection.creator),
         appBar: AppBar(
@@ -64,21 +105,27 @@ class _MemeCreatorPageState extends State<MemeCreatorPage> {
           ),
           ElevatedButton(
               onPressed: () {
+                // Navigator.of(context).push(MaterialPageRoute(
+                //     builder: (context) => ResultPage(
+                //           imageUrl: widget.selectedImageUrl,
+                //         )));
                 MemeGenerator(widget.selectedImageUrl, topController.toString(),
                     bottomController.toString());
               },
-              child: Text("Generate Meme"))
+              child: const Text("Generate Meme"))
         ]));
   }
 
-  void MemeGenerator(String imageUrl, String topText, String bottomText) async {
+  MemeGenerator(String imageUrl, String topText, String bottomText) async {
     print("meme generator called");
+    print(imageUrl);
+
     showDialog(
         barrierColor: Colors.transparent,
         context: context,
         builder: (BuildContext context) {
           return Dialog(
-            insetAnimationDuration: Duration(seconds: 3),
+            insetAnimationDuration: const Duration(seconds: 3),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: const [
@@ -89,66 +136,77 @@ class _MemeCreatorPageState extends State<MemeCreatorPage> {
           );
         });
 
-    await Future.delayed(Duration(seconds: 2));
-    //Navigator.pop(context);
-    Navigator.of(context).pop();
-    //dispose();
-    showResult(widget.selectedImageUrl);
+    await Future.delayed(
+        const Duration(seconds: 2)); // ignore: use_build_context_synchronously
+    Navigator.pop(context);
+
+    getmeme(widget.selectedImageUrl, topText, bottomText);
+    //showResult(widget.selectedImageUrl);
+  }
+
+  getmeme(String ImageUrl, String toptext, String bottomtext) {
+    return showDialog(
+        barrierColor: Colors.transparent,
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            //insetAnimationDuration: Duration(seconds: 3),
+            content: RepaintBoundary(child: buidMyStack(ImageUrl)),
+
+            actions: [
+              TextButton(
+                  onPressed: () async {
+                    Uint8List imageBytes = await captureWidgetToImage(
+                        context, RepaintBoundary(child: buidMyStack(ImageUrl)));
+                    print(imageBytes);
+                  },
+                  child: const Text("save"))
+            ],
+            title: const Text("your meme "),
+          );
+        });
+  }
+
+  Future<Uint8List> captureWidgetToImage(
+      BuildContext context, Widget widget) async {
+    RenderRepaintBoundary boundary = RenderRepaintBoundary();
+    await Future.delayed(Duration(milliseconds: 20));
+    boundary = boundary..attach(PipelineOwner());
+    boundary.layout(BoxConstraints.tight(context.size!));
+    await Future.delayed(Duration(milliseconds: 20));
+    ui.Image image = await boundary.toImage(pixelRatio: 1.0);
+    ByteData byteData =
+        await image.toByteData(format: ui.ImageByteFormat.png) as ByteData;
+    Uint8List pngBytes = byteData.buffer.asUint8List();
+    print(pngBytes);
+    print("????????????????????????????-------");
+    return pngBytes;
+
+    // Future<Uint8List> captureWidgetToImage(
+    //     BuildContext context, Widget widget) async {
+    //   RenderRepaintBoundary boundary =
+    //       context.findRenderObject() as RenderRepaintBoundary;
+    //   ui.Image image = await boundary.toImage();
+    //   ByteData byteData =
+    //       await image.toByteData(format: ui.ImageByteFormat.png) as ByteData;
+    //   print("///////////////////////////-------------------");
+    //   print(byteData.buffer.asUint8List());
+    //   return byteData.buffer.asUint8List();
   }
 
   showResult(String ImageUrl) {
     print("///////////////////////////");
     print("showResult called");
     //Navigator.pop(context);
-    return showDialog(
-        barrierColor: Colors.transparent,
-        context: context,
-        builder: (BuildContext context) {
-          return Dialog(
-              insetAnimationDuration: Duration(seconds: 3),
-              child: Container(
-                height: MediaQuery.of(context).size.height / 3,
-                child: Column(
-                  children: [
-                    Title(
-                        color: Colors.black, child: Text("Your meme is ready")),
-                    Image.network(
-                      ImageUrl,
-                      fit: BoxFit.scaleDown,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            saveImageToGallery(ImageUrl);
-                          },
-                          child: Text("save"),
-                        )
-                      ],
-                    )
-                  ],
-                ),
-              ));
-        });
   }
 
   void saveImageToGallery(String ImageUrl) async {
     //String finalmemeUrl = ImageUrl;
     final response = await http.get(Uri.parse(ImageUrl));
 
-    // var response = await Dio()
-    //     .get(ImageUrl, options: Options(responseType: ResponseType.bytes));
     print(response.bodyBytes);
     Uint8List image = response.bodyBytes;
-    // final result = await ImageGallerySaver.saveImage(
-    //     Uint8List.fromList(response.data),
-    //     quality: 60,
-    //     name: "hello");
-    // print("/////////////////////////////");
-    // print(result);
-    // Navigator.pop(context);
-    //setState(() {});
+
     var appDocumentsDir = await getApplicationDocumentsDirectory();
     //final Directory? downloadsDir = await getDownloadsDirectory();
     var firstPath = '${appDocumentsDir.path}/images';
